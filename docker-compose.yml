@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: bigdataspark_postgres
+    environment:
+      POSTGRES_DB: bigdata
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - "./исходные данные:/csv:ro"
+      - "./sql:/docker-entrypoint-initdb.d:ro"
+
+  spark:
+    image: apache/spark:3.5.1
+    container_name: bigdataspark_spark
+    depends_on:
+      - postgres
+      - clickhouse
+      - cassandra
+      - mongodb
+    environment:
+      SPARK_LOCAL_IP: 0.0.0.0
+    ports:
+      - "4040:4040"
+    volumes:
+      - "./spark-jobs/build/libs:/opt/spark/work-dir/jobs:ro"
+    command: ["bash", "-lc", "sleep infinity"]
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: bigdataspark_clickhouse
+    environment:
+      CLICKHOUSE_DB: reports
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: admin
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: bigdataspark_cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
+  mongodb:
+    image: mongo:7
+    container_name: bigdataspark_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  cassandra_data:
+  mongodb_data:
